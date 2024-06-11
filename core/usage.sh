@@ -61,7 +61,7 @@ _usage() {
 # Entry function to display development usage information
 # Usage: ./<SCRIPT_NAME> usage_dev
 # Description: Display detailed usage information for developers
-entry_usage_dev() {
+_usage_dev() {
     echo "Development usage information for $0:"
     echo "  This script can be called with various commands to perform specific tasks."
     echo "  Use the following commands during development:"
@@ -74,7 +74,7 @@ entry_usage_dev() {
 # Entry function to display usage template information
 # Usage: ./<SCRIPT_NAME> usage_template
 # Description: Display a template for writing entry functions with usage and description
-entry_usage_template() {
+_usage_template() {
     echo "Usage template information for $0:"
     echo "  This script uses the following template for commands:"
     echo "    - Entry function to <ACTION_DESCRIPTION>"
@@ -101,7 +101,11 @@ entry_usage_template() {
 }
 
 usage() {
-    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    if [[ "$1" == "usage_dev" ]]; then
+        _usage_dev
+    elif [[ "$1" == "usage_template" ]]; then
+        _usage_template
+    elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
         _usage
     elif declare -F "entry_$1" >/dev/null; then
         "entry_$1" "${@:2}"
