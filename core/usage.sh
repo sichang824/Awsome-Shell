@@ -9,7 +9,7 @@ _usage() {
     # Check if the main function exists
     if declare -F main >/dev/null; then
         # Extract the description and usage for the main function
-        main_start=$(grep -n "^main()" "$0" | cut -d: -f1)
+        main_start=$(grep -En "^(function )?main\(\)" "$0" | cut -d: -f1)
         main_start=$((main_start - 1))
         main_end=$(awk "NR<$main_start" "$0" | awk '/^}/ {print NR}' | tail -n 1)
 
@@ -36,7 +36,7 @@ _usage() {
     declare -F | awk '{print $3}' | while read -r func; do
         if [[ $func == entry_* ]]; then
             # Extract the description and usage from the function definition
-            func_start=$(grep -n "^$func()" "$0" | cut -d: -f1)
+            func_start=$(grep -En "^(function )?$func\(\)" "$0" | cut -d: -f1)
             func_start=$((func_start - 1))
             func_end=$(awk "NR<$func_start" "$0" | awk '/^}/ {print NR}' | tail -n 1)
 
