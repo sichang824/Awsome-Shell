@@ -47,10 +47,13 @@ _usage() {
 
             description=$(sed -n "$func_end,$func_start p" "$0" | grep "^# Description:" | sed 's/^# Description: //')
             usage_examples=$(sed -n "$func_end,$func_start p" "$0" | grep "^# Usage:" | sed 's/^# Usage: //')
-            echo "  ${func#entry_}     $description"
+
+            # Use printf for aligned output
+            printf "  %-15s %s\n" "${func#entry_}" "$description"
+
             if [[ -n "$usage_examples" ]]; then
                 while IFS= read -r example; do
-                    echo "    Usage: $example"
+                    printf "    Usage: %s\n" "$example"
                 done <<<"$usage_examples"
             fi
         fi
