@@ -1,8 +1,9 @@
+
 # Awesome-Shell
 
-Awesome-Shell是一个功能强大的Shell脚本工具集合，旨在简化日常开发和运维工作。通过使用Awesome-Shell，您可以轻松执行各种常见任务，例如数据库管理、系统监控和自动化部署等。
+Awesome-Shell is a powerful collection of shell script tools designed to simplify daily development and operations tasks. With Awesome-Shell, you can easily perform various common tasks such as database management, system monitoring, and automated deployment.
 
-## 安装
+## Install
 
 ### coding
 
@@ -18,19 +19,19 @@ git clone https://github.com/sichang824/Awsome-Shell.git ~/.Awesome-Shell
 cd  ~/.Awesome-Shell && ./core/install.sh
 ```
 
-## 卸载
+## Uninstall
 
 ```sh
 cd ~/.Awesome-Shell && ./core/uninstall.sh
 ```
 
-## 使用
+## Usage
 
 ### Awesome Usage
 
-使用 core/usage.sh:
+Use core/usage.sh:
 
-在你的脚本末尾中引入core/usage.sh
+Include core/usage.sh at the end of your script.
 
 ```sh
 source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@"
@@ -44,7 +45,7 @@ source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@"
     - -h, --help: Display this help message.
 ```
 
-示例：
+Examples:
 
 ```sh
 # Entry function to: <Messages>
@@ -63,22 +64,22 @@ main() {
 }
 ```
 
-注意: 用适当的值替换 <ACTION_DESCRIPTION>, <SCRIPT_NAME>, <COMMAND>, 和 <DETAILED_DESCRIPTION>。
+Note: Replace <ACTION_DESCRIPTION>, <SCRIPT_NAME>, <COMMAND>, and <DETAILED_DESCRIPTION> with appropriate values.
 
-### Awesome 颜色
+### Awesome Colors
 
-## 基准测试
+## Benchmark
 
-### 基准测试结果
+### Benchmark Results
 
-我们使用`hyperfine`对`bash cli.sh -h`命令进行了基准测试。以下是测试结果：
+We used `hyperfine` to benchmark the `bash cli.sh -h` command. Here are the results:
 
-| 基准命令                          | 平均时间 (ms) ± σ | 用户时间 (ms) | 系统时间 (ms)   | 范围 (ms)        | 运行次数 | 备注                                                                 |
-|----------------------------------|-------------------|----------------|------------------|-----------------|------|----------------------------------------------------------------------|
-| `hyperfine 'bash cli.sh -h'`     | 5.6 ± 0.4         | 2.9            | 2.1              | 5.1 - 9.8       | 359  | 检测到统计异常值。建议在没有其他程序干扰的安静系统上重新运行此基准测试。使用 '--warmup' 或 '--prepare' 选项可能会有所帮助。 |
-| `hyperfine --runs 1000 --warmup 10 'bash cli.sh -h'` | 6.2 ± 1.9      | 3.0            | 2.3              | 5.0 - 33.5      | 1000 | 检测到统计异常值。建议在没有其他程序干扰的安静系统上重新运行此基准测试。使用 '--warmup' 或 '--prepare' 选项可能会有所帮助。 |
+| Benchmark Command                | Mean Time (ms) ± σ | User Time (ms) | System Time (ms) | Range (ms)        | Runs | Notes                                                                 |
+|----------------------------------|--------------------|----------------|------------------|-------------------|------|----------------------------------------------------------------------|
+| `hyperfine 'bash cli.sh -h'`     | 5.6 ± 0.4          | 2.9            | 2.1              | 5.1 - 9.8         | 359  | Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options. |
+| `hyperfine --runs 1000 --warmup 10 'bash cli.sh -h'` | 6.2 ± 1.9          | 3.0            | 2.3              | 5.0 - 33.5        | 1000 | Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options. |
 
-从以上结果可以看出，`bash cli.sh -h`命令的执行时间非常短，平均在5-6毫秒之间。尽管在某些测试中检测到统计异常值，但总体性能表现仍然非常优秀。
+From the above results, we can see that the execution time of the `bash cli.sh -h` command is very short, averaging between 5-6 milliseconds. Despite detecting statistical outliers in some tests, the overall performance is still excellent.
 
 ```sh
 ❯ hyperfine 'bash cli.sh -h'
@@ -137,24 +138,24 @@ Commands:
      ./cli.sh grant <DATABASE_NAME> <USERNAME>
 ```
 
-## 贡献
+## Contributing
 
-我们欢迎社区的贡献！请阅读我们的[贡献指南](CONTRIBUTING.md)以开始。
+We welcome contributions from the community! Please read our [contributing guidelines](CONTRIBUTING.md) to get started.
 
-## 常见问题
+## FAQ
 
-### 如何安装Awesome-Shell？
+### How do I install Awesome-Shell?
 
-请按照上面提到的安装步骤进行操作。如果遇到任何问题，请检查日志文件以获取更多详细信息。
+Follow the installation steps mentioned above. If you encounter any issues, please check the log files for more details.
 
-### 如何卸载Awesome-Shell？
+### How do I uninstall Awesome-Shell?
 
-按照“卸载”部分提到的步骤运行卸载脚本。
+Run the uninstall script as mentioned in the "Uninstall" section.
 
-### 如何为Awesome-Shell做贡献？
+### How do I contribute to Awesome-Shell?
 
-请阅读我们的[贡献指南](CONTRIBUTING.md)以获取详细的贡献说明。
+Please read our [contributing guidelines](CONTRIBUTING.md) for detailed instructions on how to contribute.
 
-## 联系方式
+## Contact
 
-如有任何问题或反馈，请通过[zhaoanke@163.com](mailto:zhaoanke@163.com)联系我们，或加入我们的[讨论论坛](https://github.com/sichang824/Awsome-Shell/discussions)。
+For any questions or feedback, please reach out to us at [zhaoanke@163.com](mailto:zhaoanke@163.com) or join our [discussion forum](https://github.com/sichang824/Awsome-Shell/discussions).

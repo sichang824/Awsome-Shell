@@ -6,7 +6,7 @@
 _usage() {
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     awk -f "$script_dir/usage.awk" "$0"
-    exit 1
+    exit 0
 }
 
 # Entry function to display development usage information
@@ -34,18 +34,18 @@ _usage_template() {
     echo
     echo "Examples:"
     echo
-    echo "  # Entry function to: <Messages>"
-    echo "  # Usage: ./<SCRIPT_NAME> <COMMAND>"
-    echo "  # Description: <Display into usage>"
-    echo "  entry_<COMMAND>() {"
-    echo "      echo \"This is a template\""
-    echo "  }"
+    echo "# Entry function to: <Messages>"
+    echo "# Usage: ./<SCRIPT_NAME> <COMMAND>"
+    echo "# Description: <Display into usage>"
+    echo "entry_<COMMAND>() {"
+    echo "    echo \"This is a template\""
+    echo "}"
     echo
-    echo "  # Main function example"
-    echo "  # Description: Main function to execute the default behavior"
-    echo "  main() {"
-    echo "      echo \"This is the main function\""
-    echo "  }"
+    echo "# Main function example"
+    echo "# Description: Main function to execute the default behavior"
+    echo "main() {"
+    echo "    echo \"This is the main function\""
+    echo "}"
     echo
     echo "Note: Replace <ACTION_DESCRIPTION>, <SCRIPT_NAME>, <COMMAND>, and <DETAILED_DESCRIPTION> with appropriate values."
     exit 0
