@@ -73,6 +73,23 @@ main() {
 
 ### Awesome 颜色
 
+### Internet ip address
+
+```sh
+❯ ./plugins/internet_ip_address.sh 
+Usage: ./plugins/internet_ip_address.sh [command]
+
+Main:  Get internet ip address
+
+Commands:
+  test_curls  Test all listed curl commands
+     ./network_ip.sh test_curls
+  ipv6  Get IPv6 address using ifconfig.me or provided URL
+     ./internet_ip.sh ipv6 [url]
+  ipv4  Get IPv4 address using ipinfo.io/ip or provided URL
+     ./internet_ip.sh ipv4 [url]
+```
+
 ## 基准测试
 
 ### 基准测试结果

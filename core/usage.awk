@@ -2,7 +2,7 @@
 
 BEGIN {
     FS = "\n"
-    print "Usage: cli.sh [command]"
+    print "Usage: " ARGV[1] " [command]"
     main_found = 0
     in_main = 0
     in_entry = 0
