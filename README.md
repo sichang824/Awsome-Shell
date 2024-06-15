@@ -2,6 +2,12 @@
 
 Awesome-Shell是一个功能强大的Shell脚本工具集合，旨在简化日常开发和运维工作。通过使用Awesome-Shell，您可以轻松执行各种常见任务，例如数据库管理、系统监控和自动化部署等。
 
+## AI 助手
+
+Awsome Shell现在接入了 Coze AI Bot，你可以通过 AI 助手快速的解决问题，并实现你的需求
+
+[Awsome Shell - Coze AI Bot](https://www.coze.com/s/Zs8MoWf1c/)
+
 ## 安装
 
 ### coding
