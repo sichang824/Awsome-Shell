@@ -46,15 +46,16 @@ entry_configure_ssh_config() {
             case $yn in
                 [Yy]* ) 
                     awk -v github_domain="$github_domain" -v github_user="$github_user" -v filename="$filename" '
-                        /Host '"$github_domain"'/,/IdentityFile/ {
-                            if(/Host/) print "Host " github_domain; 
-                            else if(/HostName/) print "    HostName " github_domain;
-                            else if(/User/) print "    User " github_user;
-                            else if(/Port/) print "    Port 22";
-                            else if(/IdentityFile/) print "    IdentityFile " filename;
-                            next;
+                        /Host '"$github_domain"'/{
+                            found=1
+                            print "Host " github_domain
+                            print "    HostName " github_domain
+                            print "    User " github_user
+                            print "    Port 22" 
+                            print "    IdentityFile " filename
+                            next
                         }
-                        1
+                        found==0 {print}
                     ' "$ssh_config_file" > tmp_config && mv tmp_config "$ssh_config_file"
                     echo "Host $github_domain User $github_user 的配置已被覆盖"
                     break
