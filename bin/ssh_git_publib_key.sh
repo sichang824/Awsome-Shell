@@ -19,12 +19,11 @@ entry_create_ssh_key() {
 }
 
 # Description: 将公钥上传到 GitHub
-# Usage: ./ssh_git_publib_key.sh upload_public_key
-entry_upload_public_key() {
+# Usage: ./ssh_git_publib_key.sh check_public_key
+entry_check_public_key() {
     # 直接使用全局变量 filename,不需要再传参数
     read -p "请输入 GitHub 域名: " github_domain
-    cat "$filename" | ssh -T $github_domain
-    echo "SSH 密钥对已创建并添加到你的 SSH agent 中。"
+    ssh -T $github_domain
 }
 
 # Description: 配置 SSH config
@@ -85,8 +84,8 @@ EOF
 # Usage: ./ssh_git_publib_key.sh aio
 entry_aio() {
     entry_create_ssh_key
-    entry_upload_public_key
     entry_configure_ssh_config
+    entry_check_public_key
 }
 
 # Description: 查看ssh-add的秘钥列表
