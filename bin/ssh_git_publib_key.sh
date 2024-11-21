@@ -1,7 +1,5 @@
 #!/bin/bash
 
-filename=""
-
 # Description: 创建 SSH 密钥对并添加到 SSH agent
 # Usage: ./ssh_git_publib_key.sh create_ssh_key
 entry_create_ssh_key() {
@@ -9,6 +7,8 @@ entry_create_ssh_key() {
     read -p "请输入你的邮箱: " email
     # 将生成的密钥文件路径赋值给全局变量 filename
     filename="$HOME/.ssh/id_rsa_$(date +%Y%m%d%H%M%S)"
+
+    echo "密钥文件路径: $filename"
     
     # 确保 ~/.ssh 目录存在
     mkdir -p ~/.ssh
@@ -29,11 +29,11 @@ entry_check_public_key() {
 # Description: 配置 SSH config
 # Usage: ./ssh_git_publib_key.sh configure_ssh_config
 entry_configure_ssh_config() {
+    read -p "请输入密钥文件路径: " filename
     read -p "请输入 GitHub 用户名: " github_user
     read -p "请输入 GitHub 域名: " github_domain
     
     mkdir -p ~/.ssh/config.d
-    
     ssh_config_file=~/.ssh/config.d/git
     
     if grep -q "Host $github_domain" "$ssh_config_file" 2>/dev/null && 
