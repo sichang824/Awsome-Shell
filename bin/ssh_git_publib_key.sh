@@ -1,5 +1,68 @@
 #!/bin/bash
 
+config_content="""#	$OpenBSD: ssh_config,v 1.35 2020/07/17 03:43:42 dtucker Exp $
+
+# This is the ssh client system-wide configuration file.  See
+# ssh_config(5) for more information.  This file provides defaults for
+# users, and the values can be changed in per-user configuration files
+# or on the command line.
+
+# Configuration data is parsed as follows:
+#  1. command line options
+#  2. user-specific file
+#  3. system-wide file
+# Any configuration value is only changed the first time it is set.
+# Thus, host-specific definitions should be at the beginning of the
+# configuration file, and defaults at the end.
+
+# This Include directive is not part of the default ssh_config shipped with
+# OpenSSH. Options set in the included configuration files generally override
+# those that follow.  The defaults only apply to options that have not been
+# explicitly set.  Options that appear multiple times keep the first value set,
+# unless they are a multivalue option such as IdentityFile.
+Include config.d/*
+
+# Site-wide defaults for some commonly used options.  For a comprehensive
+# list of available options, their meanings and defaults, please see the
+# ssh_config(5) man page.
+
+# Host *
+#   ForwardAgent no
+#   ForwardX11 no
+#   PasswordAuthentication yes
+#   HostbasedAuthentication no
+#   GSSAPIAuthentication no
+#   GSSAPIDelegateCredentials no
+#   BatchMode no
+#   CheckHostIP yes
+#   AddressFamily any
+#   ConnectTimeout 0
+#   StrictHostKeyChecking ask
+#   IdentityFile ~/.ssh/id_rsa
+#   IdentityFile ~/.ssh/id_dsa
+#   IdentityFile ~/.ssh/id_ecdsa
+#   IdentityFile ~/.ssh/id_ed25519
+#   Port 22
+#   Ciphers aes128-ctr,aes192-ctr,aes256-ctr,aes128-cbc,3des-cbc
+#   MACs hmac-md5,hmac-sha1,umac-64@openssh.com
+#   EscapeChar ~
+#   Tunnel no
+#   TunnelDevice any:any
+#   PermitLocalCommand no
+#   VisualHostKey no
+#   ProxyCommand ssh -q -W %h:%p gateway.example.com
+#   RekeyLimit 1G 1h
+#   UserKnownHostsFile ~/.ssh/known_hosts.d/%k
+Host *
+    SendEnv LANG LC_*
+    ServerAliveInterval 10
+    ServerAliveCountMax 99999
+    TCPKeepAlive yes
+    HashKnownHosts yes
+    GSSAPIAuthentication yes"""
+
+
+
 # Description: 创建 SSH 密钥对并添加到 SSH agent
 # Usage: ./ssh_git_publib_key.sh create_ssh_key
 entry_create_ssh_key() {
@@ -79,6 +142,18 @@ Host $github_domain
 EOF
         echo "已添加 Host $github_domain User $github_user 到 $ssh_config_file"
     fi
+}
+
+# Description: 写入 SSH 配置文件 
+# Usage: ./ssh_git_publib_key.sh write_ssh_config
+entry_write_ssh_config() {
+    ssh_config_file=~/.ssh/config
+    
+    echo "$config_content" > "$ssh_config_file"
+    echo "已写入配置到 $ssh_config_file"
+    
+    echo "当前 $ssh_config_file 的内容为:"
+    cat "$ssh_config_file"
 }
 
 # Description: 集成创建ssh key、上传公钥、配置SSH config
