@@ -3,7 +3,6 @@
 if [ -d "${AWESOME_SHELL_ROOT}" ]; then
     cd "${AWESOME_SHELL_ROOT}" || exit
     git pull
-    chmod +x $HOME/.Awesome-Shell/bin/*
 else
     echo "目录 ${AWESOME_SHELL_ROOT} 不存在。"
 fi
