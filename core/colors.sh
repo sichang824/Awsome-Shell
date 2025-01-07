@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+# 定义颜色
+COLOR_RED='\033[0;31m'
+COLOR_GREEN='\033[0;32m'
+COLOR_YELLOW='\033[1;33m'
+COLOR_BLUE='\033[0;34m'
+COLOR_NONE='\033[0m'
+
+# 定义符号
+SYMBOL_SUCCESS="✓"
+SYMBOL_ERROR="✗"
+SYMBOL_WARNING="⚠"
+SYMBOL_STAR="✨"
+
 # Entry function to show all available colors and styles
 # Usage: ./colors.sh
 # Description: Displays all available ANSI colors and styles
@@ -33,5 +46,5 @@ main() {
     printf "\033[9mStrikethrough\033[0m\n"
 }
 
-# shellcheck disable=SC1091
-source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "${@}"
+# # shellcheck disable=SC1091
+# source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "${@}"
