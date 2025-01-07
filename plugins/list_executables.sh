@@ -34,15 +34,15 @@ entry_list_executables() {
         echo "错误: 在 ${AWESOME_SHELL_ROOT}/bin 目录下没有找到 .sh 文件"
         exit 1
     fi
-    
+
     # 初始化选择的索引
     current=0
-    
+
     # 清屏函数
     clear_screen() {
         tput clear
     }
-    
+
     # 显示文件列表
     show_files() {
         clear_screen
@@ -57,81 +57,44 @@ entry_list_executables() {
             fi
         done
     }
-    
+
     # 主循环
     while true; do
         show_files
-        
+
         # 读取按键
         read -rsn1 key
-        
+
         # 检查是否是方向键的第一个字符
         if [[ $key == $'\x1b' ]]; then
             read -rsn2 key
             case $key in
-                '[A') # 上箭头
-                    ((current > 0)) && ((current--))
-                    ;;
-                '[B') # 下箭头
-                    ((current < ${#files[@]}-1)) && ((current++))
-                    ;;
+            '[A') # 上箭头
+                ((current > 0)) && ((current--))
+                ;;
+            '[B') # 下箭头
+                ((current < ${#files[@]} - 1)) && ((current++))
+                ;;
             esac
         else
             case $key in
-                [0-9]) # 数字键
-                    num=$key
-                    # 等待可能的第二个数字
-                    read -t 0.5 -rsn1 second_key
-                    if [[ $second_key =~ [0-9] ]]; then
-                        num="${key}${second_key}"
-                    fi
-                    # 检查数字是否在有效范围内
-                    if [ "$num" -lt "${#files[@]}" ]; then
-                        current=$num
-                        # 显示选择
-                        show_files
-                        # 短暂延迟后执行
-                        sleep 0.2
-                        selected_file="${files[$current]}"
-                        selected_path="${AWESOME_SHELL_ROOT}/bin/$selected_file"
-                        
-                        # 检查文件是否存在且可执行
-                        if [ ! -x "$selected_path" ]; then
-                            tput rmcup
-                            echo "错误: $selected_file 不可执行，正在添加执行权限..."
-                            chmod +x "$selected_path"
-                            if [ $? -ne 0 ]; then
-                                echo "错误: 无法添加执行权限"
-                                exit 1
-                            fi
-                            echo "已添加执行权限"
-                        fi
-                        
-                        # 恢复光标位置
-                        tput rmcup
-                        echo "你选择了: $selected_file"
-                        # 执行选中的脚本
-                        "$selected_path"
-                        exit 0
-                    fi
-                    ;;
-                'k') # vim 上
-                    ((current > 0)) && ((current--))
-                    ;;
-                'j') # vim 下
-                    ((current < ${#files[@]}-1)) && ((current++))
-                    ;;
-                'q') # 退出
-                    clear_screen
-                    # 恢复光标位置
-                    tput rmcup
-                    exit 0
-                    ;;
-                '') # 回车
-                    clear_screen
+            [0-9]) # 数字键
+                num=$key
+                # 等待可能的第二个数字
+                read -t 0.5 -rsn1 second_key
+                if [[ $second_key =~ [0-9] ]]; then
+                    num="${key}${second_key}"
+                fi
+                # 检查数字是否在有效范围内
+                if [ "$num" -lt "${#files[@]}" ]; then
+                    current=$num
+                    # 显示选择
+                    show_files
+                    # 短暂延迟后执行
+                    sleep 0.2
                     selected_file="${files[$current]}"
                     selected_path="${AWESOME_SHELL_ROOT}/bin/$selected_file"
-                    
+
                     # 检查文件是否存在且可执行
                     if [ ! -x "$selected_path" ]; then
                         tput rmcup
@@ -143,14 +106,51 @@ entry_list_executables() {
                         fi
                         echo "已添加执行权限"
                     fi
-                    
+
                     # 恢复光标位置
                     tput rmcup
                     echo "你选择了: $selected_file"
                     # 执行选中的脚本
                     "$selected_path"
                     exit 0
-                    ;;
+                fi
+                ;;
+            'k') # vim 上
+                ((current > 0)) && ((current--))
+                ;;
+            'j') # vim 下
+                ((current < ${#files[@]} - 1)) && ((current++))
+                ;;
+            'q') # 退出
+                clear_screen
+                # 恢复光标位置
+                tput rmcup
+                exit 0
+                ;;
+            '') # 回车
+                clear_screen
+                selected_file="${files[$current]}"
+                selected_path="${AWESOME_SHELL_ROOT}/bin/$selected_file"
+
+                # 检查文件是否存在且可执行
+                if [ ! -x "$selected_path" ]; then
+                    tput rmcup
+                    echo "错误: $selected_file 不可执行，正在添加执行权限..."
+                    chmod +x "$selected_path"
+                    if [ $? -ne 0 ]; then
+                        echo "错误: 无法添加执行权限"
+                        exit 1
+                    fi
+                    echo "已添加执行权限"
+                fi
+
+                # 恢复光标位置
+                tput rmcup
+                echo "你选择了: $selected_file"
+                # 执行选中的脚本
+                "$selected_path"
+                exit 0
+                ;;
             esac
         fi
     done
@@ -162,4 +162,4 @@ main() {
 
 # 引入 usage.sh 并调用 usage 函数
 # shellcheck disable=SC1091
-source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@" 
+source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@"

@@ -5,7 +5,7 @@ source "$(dirname "$(dirname "$0")")/plugins/colors.sh"
 source "$(dirname "$(dirname "$0")")/plugins/replace.sh"
 
 SHELL_ROOT_CONFIG='export AWESOME_SHELL_ROOT=$HOME/.Awesome-Shell'
-SHELL_ALIAS_CONFIG='alias as=$HOME/.Awesome-Shell/bin/hello.sh'
+SHELL_ALIAS_CONFIG='alias as=$HOME/.Awesome-Shell/core/main.sh'
 
 configure_shell() {
     local config_file="$1"

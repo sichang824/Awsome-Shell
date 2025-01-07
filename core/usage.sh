@@ -6,7 +6,6 @@
 _usage() {
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     awk -f "$script_dir/usage.awk" "$0"
-    exit 0
 }
 
 # Entry function to display development usage information
@@ -19,7 +18,6 @@ _usage_dev() {
     echo "    - entry_<command>: Executes the specified command."
     echo "    - main: The main function if defined."
     echo "    - -h, --help: Display this help message."
-    exit 0
 }
 
 # Entry function to display usage template information
@@ -48,7 +46,6 @@ _usage_template() {
     echo "}"
     echo
     echo "Note: Replace <ACTION_DESCRIPTION>, <SCRIPT_NAME>, <COMMAND>, and <DETAILED_DESCRIPTION> with appropriate values."
-    exit 0
 }
 
 usage() {

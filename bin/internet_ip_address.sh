@@ -64,10 +64,13 @@ entry_ipv4() {
 }
 
 # Description: Get internet ip address
+# Usage: Commands [ipv4|ipv6|test_curls]
 main() {
-    _usage
+    _usage "$@"
+    # shellcheck disable=SC1091
+    source "${AWESOME_SHELL_ROOT}/plugins/interactive.sh" && interactive_select "$0"
 }
 
 # 引入 usage.sh 并调用 usage 函数
 # shellcheck disable=SC1091
-source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@"
+source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@" && exit 0
