@@ -67,8 +67,6 @@ entry_ipv4() {
 # Usage: Commands [ipv4|ipv6|test_curls]
 main() {
     _usage "$@"
-    # shellcheck disable=SC1091
-    source "${AWESOME_SHELL_ROOT}/plugins/interactive.sh" && interactive_select "$0"
 }
 
 # 引入 usage.sh 并调用 usage 函数

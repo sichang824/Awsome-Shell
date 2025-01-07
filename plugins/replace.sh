@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # shellcheck disable=SC1091
-source "$(dirname "$(dirname "$0")")/core/colors.sh"
+source "$(dirname "$(dirname "$0")")/plugins/colors.sh"
 
 # 替换或添加配置到文件
 # $1: 目标文件路径

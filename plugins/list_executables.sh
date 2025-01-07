@@ -1,8 +1,38 @@
 #!/usr/bin/env bash
 
 # Description: 交互式列出并选择 bin 目录下的可执行文件
-# Usage: ./list_executables.sh
+# Usage: ./list_executables.sh [-l|--list]
+
+# 添加一个函数来直接列出文件
+list_files() {
+    # 检查 AWESOME_SHELL_ROOT 是否设置
+    if [ -z "${AWESOME_SHELL_ROOT}" ]; then
+        echo "错误: AWESOME_SHELL_ROOT 环境变量未设置"
+        exit 1
+    fi
+
+    # 检查目录是否存在
+    if [ ! -d "${AWESOME_SHELL_ROOT}/bin" ]; then
+        echo "错误: ${AWESOME_SHELL_ROOT}/bin 目录不存在"
+        exit 1
+    fi
+
+    echo "在 ${AWESOME_SHELL_ROOT}/bin 中找到的可执行文件："
+    echo "----------------------------------------"
+    local index=0
+    while IFS= read -r file; do
+        echo "$index   ${file%.sh}"
+        ((index++))
+    done < <(cd "${AWESOME_SHELL_ROOT}/bin" && ls -1 *.sh 2>/dev/null)
+}
+
 entry_list_executables() {
+    # 检查是否有参数
+    if [ "$1" = "-l" ] || [ "$1" = "--list" ]; then
+        list_files
+        exit 0
+    fi
+
     # 保存当前光标位置
     tput smcup
 
@@ -20,6 +50,7 @@ entry_list_executables() {
 
     # 获取所有 .sh 文件并确保它们可执行
     files=()
+    file_names=() # 新增数组存储不带后缀的文件名
     while IFS= read -r file; do
         file_path="${AWESOME_SHELL_ROOT}/bin/$file"
         if [ ! -x "$file_path" ]; then
@@ -27,6 +58,8 @@ entry_list_executables() {
             chmod +x "$file_path"
         fi
         files+=("$file")
+        # 去除 .sh 后缀
+        file_names+=("${file%.sh}")
     done < <(cd "${AWESOME_SHELL_ROOT}/bin" && ls -1 *.sh 2>/dev/null)
 
     # 检查是否找到文件
@@ -51,9 +84,9 @@ entry_list_executables() {
         echo "----------------------------------------"
         for i in "${!files[@]}"; do
             if [ "$i" -eq "$current" ]; then
-                echo -e "\033[32m$i > ${files[$i]}\033[0m"
+                echo -e "\033[32m$i > ${file_names[$i]}\033[0m"
             else
-                echo "  $i   ${files[$i]}"
+                echo "  $i   ${file_names[$i]}"
             fi
         done
     }
@@ -157,7 +190,7 @@ entry_list_executables() {
 }
 
 main() {
-    entry_list_executables
+    entry_list_executables "$@"
 }
 
 # 引入 usage.sh 并调用 usage 函数

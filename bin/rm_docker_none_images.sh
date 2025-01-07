@@ -25,4 +25,8 @@ entry_remove_docker_none_images() {
     fi
 }
 
+main() {
+    entry_remove_docker_none_images
+}
+
 source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "$@"
