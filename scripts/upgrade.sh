@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "$(dirname "$(dirname "$0")")/core/colors.sh"
+source "$(dirname "$(dirname "$0")")/plugins/colors.sh"
 
 if [ -d "${AWESOME_SHELL_ROOT}" ]; then
     cd "${AWESOME_SHELL_ROOT}" || exit

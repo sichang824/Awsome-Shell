@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "$(dirname "$(dirname "$0")")/core/colors.sh"
+source "$(dirname "$(dirname "$0")")/plugins/colors.sh"
 
 get_message() {
     case "$1" in

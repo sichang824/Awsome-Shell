@@ -16,7 +16,7 @@ SYMBOL_STAR="✨"
 # Entry function to show all available colors and styles
 # Usage: ./colors.sh
 # Description: Displays all available ANSI colors and styles
-main() {
+entry_show_colors() {
     # 标准 8 色文本颜色
     printf "\033[30m黑色\033[0m "
     printf "\033[31m红色\033[0m "
@@ -45,6 +45,3 @@ main() {
     printf "\033[7mReverse\033[0m "
     printf "\033[9mStrikethrough\033[0m\n"
 }
-
-# # shellcheck disable=SC1091
-# source "${AWESOME_SHELL_ROOT}/core/usage.sh" && usage "${@}"
