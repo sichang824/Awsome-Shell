@@ -32,6 +32,17 @@ func init() {
 func getPgConfig() db.PgConfig {
 	host := os.Getenv("PGHOST")
 	port := os.Getenv("PGPORT")
+	user := os.Getenv("PGUSER")
+	if user == "" {
+		user = os.Getenv("PG_USER")
+	}
+	pw := os.Getenv("PGPASSWORD")
+	if pw == "" {
+		pw = os.Getenv("PG_PASSWORD")
+	}
+	if pw == "" {
+		pw = os.Getenv("PG_PASS")
+	}
 	config.LoadEnv()
 	if host == "" {
 		host = config.GetEnv("PGHOST", pgHost)
@@ -45,14 +56,22 @@ func getPgConfig() db.PgConfig {
 	if port == "" {
 		port = "5432"
 	}
-	pw := pgPassword
+	if user == "" {
+		user = pgUser
+	}
+	if user == "" {
+		user = config.GetEnv("PGUSER", config.GetEnv("PG_USER", "postgres"))
+	}
 	if pw == "" {
-		pw = config.GetEnv("PG_PASSWORD", config.GetEnv("PGPASSWORD", ""))
+		pw = pgPassword
+	}
+	if pw == "" {
+		pw = config.GetEnv("PG_PASSWORD", config.GetEnv("PGPASSWORD", config.GetEnv("PG_PASS", "")))
 	}
 	return db.PgConfig{
 		Host:     host,
 		Port:     port,
-		User:     pgUser,
+		User:     user,
 		Password: pw,
 		Database: "postgres",
 	}
