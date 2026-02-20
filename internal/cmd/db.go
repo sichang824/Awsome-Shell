@@ -14,7 +14,7 @@ import (
 	"github.com/sichang824/awesome-shell/internal/db"
 	"github.com/sichang824/awesome-shell/internal/exec"
 	"github.com/spf13/cobra"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 var dbCmd = &cobra.Command{
@@ -89,16 +89,26 @@ func init() {
 }
 
 func getMySQLConfig() db.MySQLConfig {
+	// Read from env first so direnv/shell exports (and special chars like +) are not overwritten by LoadEnv
+	host := os.Getenv("MYSQL_HOST")
+	port := os.Getenv("MYSQL_PORT")
+	pw := os.Getenv("MYSQL_ROOT_PASSWORD")
 	config.LoadEnv()
-	host := mysqlHost
-	if v := config.GetEnv("MYSQL_HOST", ""); v != "" {
-		host = v
+	if host == "" {
+		host = config.GetEnv("MYSQL_HOST", mysqlHost)
 	}
-	port := mysqlPort
-	if v := config.GetEnv("MYSQL_PORT", ""); v != "" {
-		port = v
+	if host == "" {
+		host = "127.0.0.1"
 	}
-	pw := mysqlPassword
+	if port == "" {
+		port = config.GetEnv("MYSQL_PORT", mysqlPort)
+	}
+	if port == "" {
+		port = "3306"
+	}
+	if pw == "" {
+		pw = mysqlPassword
+	}
 	if pw == "" {
 		pw = config.GetEnv("MYSQL_ROOT_PASSWORD", "")
 	}
@@ -112,7 +122,17 @@ func getMySQLConfig() db.MySQLConfig {
 }
 
 func openMySQL(cfg db.MySQLConfig) (*sql.DB, error) {
-	return sql.Open("mysql", cfg.DSN())
+	mc := &mysql.Config{
+		User:                 cfg.User,
+		Passwd:               cfg.Password,
+		Net:                  "tcp",
+		Addr:                 cfg.Host + ":" + cfg.Port,
+		DBName:               cfg.Database,
+		AllowNativePasswords: true, // required for MariaDB / mysql_native_password
+		AllowCleartextPasswords: true,
+		TLSConfig:            "false", // skip TLS for local/docker
+	}
+	return sql.Open("mysql", mc.FormatDSN())
 }
 
 var (

@@ -3,6 +3,7 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/sichang824/awesome-shell/internal/config"
@@ -29,14 +30,20 @@ func init() {
 }
 
 func getPgConfig() db.PgConfig {
+	host := os.Getenv("PGHOST")
+	port := os.Getenv("PGPORT")
 	config.LoadEnv()
-	host := pgHost
-	if v := config.GetEnv("PGHOST", ""); v != "" {
-		host = v
+	if host == "" {
+		host = config.GetEnv("PGHOST", pgHost)
 	}
-	port := pgPort
-	if v := config.GetEnv("PGPORT", ""); v != "" {
-		port = v
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	if port == "" {
+		port = config.GetEnv("PGPORT", pgPort)
+	}
+	if port == "" {
+		port = "5432"
 	}
 	pw := pgPassword
 	if pw == "" {

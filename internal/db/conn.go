@@ -3,22 +3,13 @@ package db
 import "net/url"
 
 // MySQLConfig holds MySQL connection parameters.
+// DSN is built via go-sql-driver/mysql.Config in cmd layer (handles password encoding & auth).
 type MySQLConfig struct {
 	Host     string
 	Port     string
 	User     string
 	Password string
 	Database string
-}
-
-// DSN returns MySQL DSN for go-sql-driver/mysql (e.g. user:password@tcp(host:3306)/dbname).
-func (c *MySQLConfig) DSN() string {
-	addr := c.Host + ":" + c.Port
-	dsn := c.User + ":" + c.Password + "@tcp(" + addr + ")/"
-	if c.Database != "" {
-		dsn += c.Database
-	}
-	return dsn
 }
 
 // PgConfig holds PostgreSQL connection parameters.

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/sichang824/awesome-shell/internal/config"
 	"github.com/sichang824/awesome-shell/internal/db"
@@ -30,14 +31,20 @@ func init() {
 }
 
 func getMongoConfig() db.MongoConfig {
+	host := os.Getenv("MONGO_HOST")
+	port := os.Getenv("MONGO_PORT")
 	config.LoadEnv()
-	host := mongoHost
-	if v := config.GetEnv("MONGO_HOST", ""); v != "" {
-		host = v
+	if host == "" {
+		host = config.GetEnv("MONGO_HOST", mongoHost)
 	}
-	port := mongoPort
-	if v := config.GetEnv("MONGO_PORT", ""); v != "" {
-		port = v
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	if port == "" {
+		port = config.GetEnv("MONGO_PORT", mongoPort)
+	}
+	if port == "" {
+		port = "27017"
 	}
 	pw := mongoPassword
 	if pw == "" {
