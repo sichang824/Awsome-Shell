@@ -19,7 +19,7 @@ Awsome Shell现在接入了 Coze AI Bot，你可以通过 AI 助手快速的解�
 git clone https://github.com/sichang824/Awsome-Shell.git ~/.Awesome-Shell
 cd ~/.Awesome-Shell
 make build
-# 或: go build -o bin/as ./cmd/awesome-shell
+# 或: go build -o bin/as ./cmd/as
 
 # 使用
 ./bin/as --help

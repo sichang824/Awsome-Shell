@@ -5,7 +5,7 @@
 
 BINARY_NAME := as
 BIN_DIR     := bin
-MAIN_PKG    := ./cmd/awesome-shell
+MAIN_PKG    := ./cmd/as
 
 # Default target
 help:
