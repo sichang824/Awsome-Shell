@@ -26,6 +26,19 @@ func RunInherit(name string, args ...string) error {
 	return cmd.Run()
 }
 
+// RunInheritWithEnv runs command with extra env vars and inherited stdin/stdout/stderr.
+func RunInheritWithEnv(env map[string]string, name string, args ...string) error {
+	cmd := osexec.Command(name, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	for k, v := range env {
+		cmd.Env = append(cmd.Env, k+"="+v)
+	}
+	return cmd.Run()
+}
+
 // RunDir runs command in the given directory.
 func RunDir(dir, name string, args ...string) (stdout, stderr string, err error) {
 	cmd := osexec.Command(name, args...)

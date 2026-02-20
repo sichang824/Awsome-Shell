@@ -1,17 +1,71 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/sichang824/awesome-shell/internal/config"
+	"github.com/sichang824/awesome-shell/internal/db"
 	"github.com/sichang824/awesome-shell/internal/exec"
 	"github.com/spf13/cobra"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+var (
+	mongoHost, mongoPort, mongoUser, mongoPassword string
 )
 
 var mongoCmd = &cobra.Command{
 	Use:   "mongo",
-	Short: "MongoDB commands (docker compose service: mongo)",
+	Short: "MongoDB commands (native connection)",
+}
+
+func init() {
+	mongoCmd.PersistentFlags().StringVar(&mongoHost, "host", "127.0.0.1", "MongoDB host")
+	mongoCmd.PersistentFlags().StringVar(&mongoPort, "port", "27017", "MongoDB port")
+	mongoCmd.PersistentFlags().StringVar(&mongoUser, "user", "root", "MongoDB user")
+	mongoCmd.PersistentFlags().StringVar(&mongoPassword, "password", "", "MongoDB password (default from MONGO_INITDB_ROOT_PASSWORD env)")
+}
+
+func getMongoConfig() db.MongoConfig {
+	config.LoadEnv()
+	host := mongoHost
+	if v := config.GetEnv("MONGO_HOST", ""); v != "" {
+		host = v
+	}
+	port := mongoPort
+	if v := config.GetEnv("MONGO_PORT", ""); v != "" {
+		port = v
+	}
+	pw := mongoPassword
+	if pw == "" {
+		pw = config.GetEnv("MONGO_INITDB_ROOT_PASSWORD", "")
+	}
+	user := mongoUser
+	if user == "" {
+		user = config.GetEnv("MONGO_INITDB_ROOT_USERNAME", "root")
+	}
+	return db.MongoConfig{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: pw,
+	}
+}
+
+func openMongo(ctx context.Context, cfg db.MongoConfig) (*mongo.Client, error) {
+	clientOpts := options.Client().ApplyURI(cfg.URI())
+	client, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return nil, err
+	}
+	if err := client.Ping(ctx, nil); err != nil {
+		_ = client.Disconnect(ctx)
+		return nil, err
+	}
+	return client, nil
 }
 
 var (
@@ -47,7 +101,7 @@ var (
 	}
 	mongoClientCmd = &cobra.Command{
 		Use:   "client",
-		Short: "Connect to MongoDB (interactive)",
+		Short: "Connect to MongoDB (interactive, runs local mongosh)",
 		RunE:  runMongoClient,
 	}
 	mongoLoginCmd = &cobra.Command{
@@ -58,30 +112,57 @@ var (
 	}
 )
 
-func mongoUser() string  { return config.GetEnv("MONGO_INITDB_ROOT_USERNAME", "root") }
-func mongoPass() string { return config.GetEnv("MONGO_INITDB_ROOT_PASSWORD", "") }
-
-func mongoEval(expr string) (string, string, error) {
-	return exec.DockerComposeExec("mongo", "mongosh", "--quiet",
-		"--username", mongoUser(), "--password", mongoPass(), "--eval", expr)
+func mongoDBExists(ctx context.Context, client *mongo.Client, name string) (bool, error) {
+	list, err := client.ListDatabases(ctx, bson.M{"name": name})
+	if err != nil {
+		return false, err
+	}
+	for _, d := range list.Databases {
+		if d.Name == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func runMongoCreateDB(cmd *cobra.Command, args []string) error {
-	config.LoadEnv()
-	db := args[0]
-	out, _, _ := mongoEval("db.getMongo().getDBNames().indexOf('" + db + "') >= 0")
-	if strings.TrimSpace(out) == "true" {
-		fmt.Println("Database '" + db + "' already exists.")
+	if err := requireSafeIdent(args[0], "database"); err != nil {
+		return err
+	}
+	database := args[0]
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+
+	exists, err := mongoDBExists(ctx, client, database)
+	if err != nil {
+		return err
+	}
+	if exists {
+		fmt.Println("Database '" + database + "' already exists.")
 		return nil
 	}
-	mongoEval("db.getSiblingDB('" + db + "').createCollection('init_collection')")
-	mongoEval("db.getSiblingDB('" + db + "').init_collection.insertOne({ initialized: true })")
-	fmt.Println("Database '" + db + "' created.")
+	// Create DB by creating a collection and inserting one doc
+	err = client.Database(database).CreateCollection(ctx, "init_collection")
+	if err != nil {
+		return err
+	}
+	_, err = client.Database(database).Collection("init_collection").InsertOne(ctx, bson.M{"initialized": true})
+	if err != nil {
+		return err
+	}
+	fmt.Println("Database '" + database + "' created.")
 	return nil
 }
 
 func runMongoCreateUser(cmd *cobra.Command, args []string) error {
-	config.LoadEnv()
+	if err := requireSafeIdent(args[0], "username"); err != nil {
+		return err
+	}
 	username := args[0]
 	role, database := "readWrite", "admin"
 	if len(args) >= 3 {
@@ -90,13 +171,32 @@ func runMongoCreateUser(cmd *cobra.Command, args []string) error {
 		role = args[1]
 	}
 	pw := genPassword()
-	out, _, _ := mongoEval("db.getSiblingDB('admin').getUser('" + username + "')")
-	if strings.TrimSpace(out) != "null" && out != "" {
-		fmt.Println("User '" + username + "' already exists.")
-		return nil
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
 	}
-	js := "db.getSiblingDB('admin').createUser({ user: '" + username + "', pwd: '" + pw + "', roles: [{ role: '" + role + "', db: '" + database + "' }] })"
-	mongoEval(js)
+	defer client.Disconnect(ctx)
+
+	admin := client.Database("admin")
+	var u bson.M
+	err = admin.RunCommand(ctx, bson.D{{Key: "usersInfo", Value: username}}).Decode(&u)
+	if err == nil {
+		if users, ok := u["users"].(bson.A); ok && len(users) > 0 {
+			fmt.Println("User '" + username + "' already exists.")
+			return nil
+		}
+	}
+
+	cmdDoc := bson.D{
+		{Key: "createUser", Value: username},
+		{Key: "pwd", Value: pw},
+		{Key: "roles", Value: bson.A{bson.D{{Key: "role", Value: role}, {Key: "db", Value: database}}}},
+	}
+	if err := admin.RunCommand(ctx, cmdDoc).Err(); err != nil {
+		return err
+	}
 	fmt.Println("User:", username)
 	fmt.Println("Password:", pw)
 	fmt.Println("Save this password.")
@@ -104,44 +204,103 @@ func runMongoCreateUser(cmd *cobra.Command, args []string) error {
 }
 
 func runMongoDeleteDB(cmd *cobra.Command, args []string) error {
-	config.LoadEnv()
-	db := args[0]
-	out, _, _ := mongoEval("db.getMongo().getDBNames().indexOf('" + db + "') >= 0")
-	if strings.TrimSpace(out) != "true" {
-		fmt.Println("Database '" + db + "' does not exist.")
+	if err := requireSafeIdent(args[0], "database"); err != nil {
+		return err
+	}
+	database := args[0]
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+
+	exists, err := mongoDBExists(ctx, client, database)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		fmt.Println("Database '" + database + "' does not exist.")
 		return nil
 	}
-	mongoEval("db.getSiblingDB('" + db + "').dropDatabase()")
+	if err := client.Database(database).Drop(ctx); err != nil {
+		return err
+	}
 	fmt.Println("Database deleted.")
 	return nil
 }
 
 func runMongoDeleteUser(cmd *cobra.Command, args []string) error {
-	config.LoadEnv()
-	user := args[0]
-	out, _, _ := mongoEval("db.getSiblingDB('admin').getUser('" + user + "')")
-	if strings.TrimSpace(out) == "null" || out == "" {
-		fmt.Println("User '" + user + "' does not exist.")
+	if err := requireSafeIdent(args[0], "username"); err != nil {
+		return err
+	}
+	username := args[0]
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+
+	admin := client.Database("admin")
+	var u bson.M
+	err = admin.RunCommand(ctx, bson.D{{Key: "usersInfo", Value: username}}).Decode(&u)
+	if err != nil {
+		return err
+	}
+	if users, ok := u["users"].(bson.A); !ok || len(users) == 0 {
+		fmt.Println("User '" + username + "' does not exist.")
 		return nil
 	}
-	mongoEval("db.getSiblingDB('admin').dropUser('" + user + "')")
+
+	if err := admin.RunCommand(ctx, bson.D{{Key: "dropUser", Value: username}}).Err(); err != nil {
+		return err
+	}
 	fmt.Println("User deleted.")
 	return nil
 }
 
 func runMongoGrant(cmd *cobra.Command, args []string) error {
-	config.LoadEnv()
-	user, role, db := args[0], args[1], args[2]
-	mongoEval("db.getSiblingDB('admin').grantRolesToUser('" + user + "', [{ role: '" + role + "', db: '" + db + "' }])")
+	if err := requireSafeIdent(args[0], "username"); err != nil {
+		return err
+	}
+	if err := requireSafeIdent(args[2], "database"); err != nil {
+		return err
+	}
+	username, role, database := args[0], args[1], args[2]
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+
+	admin := client.Database("admin")
+	cmdDoc := bson.D{
+		{Key: "grantRolesToUser", Value: username},
+		{Key: "roles", Value: bson.A{bson.D{{Key: "role", Value: role}, {Key: "db", Value: database}}}},
+	}
+	if err := admin.RunCommand(ctx, cmdDoc).Err(); err != nil {
+		return err
+	}
 	fmt.Println("Granted.")
 	return nil
 }
 
 func runMongoClient(cmd *cobra.Command, args []string) error {
-	config.LoadEnv()
-	return exec.DockerComposeExecTTY("mongo", "mongosh", "--username", mongoUser(), "--password", mongoPass())
+	cfg := getMongoConfig()
+	argsCli := []string{"--host", cfg.Host, "--port", cfg.Port, "--username", cfg.User}
+	if cfg.Password != "" {
+		argsCli = append(argsCli, "--password", cfg.Password)
+	}
+	return exec.RunInherit("mongosh", argsCli...)
 }
 
 func runMongoLogin(cmd *cobra.Command, args []string) error {
-	return exec.DockerComposeExecTTY("mongo", "mongosh", "--username", args[0], "--password", args[1], "--authenticationDatabase", "admin")
+	cfg := getMongoConfig()
+	argsCli := []string{"--host", cfg.Host, "--port", cfg.Port, "--username", args[0], "--password", args[1], "--authenticationDatabase", "admin"}
+	return exec.RunInherit("mongosh", argsCli...)
 }
