@@ -9,10 +9,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/sichang824/awesome-shell/internal/config"
 	"github.com/sichang824/awesome-shell/internal/db"
-	"github.com/sichang824/awesome-shell/internal/exec"
 	"github.com/spf13/cobra"
 	"github.com/go-sql-driver/mysql"
 )
@@ -188,13 +188,13 @@ var (
 	}
 	mysqlClientCmd = &cobra.Command{
 		Use:   "client",
-		Short: "Connect to MySQL (interactive, runs local mysql client)",
+		Short: "Connect to MySQL (interactive, Go driver REPL)",
 		RunE:  runMysqlClient,
 	}
 	mysqlLoginCmd = &cobra.Command{
 		Use:   "login [username] [password]",
-		Short: "Connect to MySQL as user",
-		Args:  cobra.ExactArgs(2),
+		Short: "Connect to MySQL as user (args or --user/--password/env)",
+		Args:  cobra.RangeArgs(0, 2),
 		RunE:  runMysqlLogin,
 	}
 )
@@ -435,17 +435,109 @@ func runMysqlTables(cmd *cobra.Command, args []string) error {
 	return rows.Err()
 }
 
+func runMySQLREPL(conn *sql.DB) error {
+	scanner := bufio.NewScanner(os.Stdin)
+	var buf strings.Builder
+	fmt.Fprintln(os.Stderr, "Go driver REPL (\\q to quit)")
+	for {
+		if buf.Len() > 0 {
+			fmt.Fprint(os.Stderr, "... ")
+		} else {
+			fmt.Fprint(os.Stderr, "mysql> ")
+		}
+		if !scanner.Scan() {
+			break
+		}
+		line := scanner.Text()
+		buf.WriteString(line)
+		buf.WriteString("\n")
+		trimmed := strings.TrimRightFunc(buf.String(), unicode.IsSpace)
+		if trimmed == "" {
+			buf.Reset()
+			continue
+		}
+		if strings.TrimSpace(trimmed) == "\\q" || strings.EqualFold(trimmed, "quit") || strings.EqualFold(trimmed, "exit") {
+			break
+		}
+		if !strings.HasSuffix(strings.TrimSpace(trimmed), ";") {
+			continue
+		}
+		stmt := strings.TrimSuffix(trimmed, ";")
+		stmt = strings.TrimRightFunc(stmt, unicode.IsSpace)
+		buf.Reset()
+		if stmt == "" {
+			continue
+		}
+		rows, err := conn.Query(stmt)
+		if err != nil {
+			result, execErr := conn.Exec(stmt)
+			if execErr != nil {
+				fmt.Fprintln(os.Stderr, "ERROR:", err)
+				continue
+			}
+			affected, _ := result.RowsAffected()
+			fmt.Println("OK", affected, "row(s) affected")
+			continue
+		}
+		cols, _ := rows.Columns()
+		if len(cols) == 0 {
+			_ = rows.Close()
+			continue
+		}
+		fmt.Println(strings.Join(cols, "\t"))
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals {
+			ptrs[i] = &vals[i]
+		}
+		for rows.Next() {
+			if err := rows.Scan(ptrs...); err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR:", err)
+				break
+			}
+			parts := make([]string, len(cols))
+			for i, v := range vals {
+				if v == nil {
+					parts[i] = "NULL"
+				} else {
+					parts[i] = fmt.Sprint(v)
+				}
+			}
+			fmt.Println(strings.Join(parts, "\t"))
+		}
+		if err := rows.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "ERROR:", err)
+		}
+		_ = rows.Close()
+	}
+	return scanner.Err()
+}
+
 func runMysqlClient(cmd *cobra.Command, args []string) error {
 	cfg := getMySQLConfig()
-	argsCli := []string{"-h", cfg.Host, "-P", cfg.Port, "-u", cfg.User}
-	if cfg.Password != "" {
-		argsCli = append(argsCli, "-p"+cfg.Password)
+	conn, err := openMySQL(cfg)
+	if err != nil {
+		return err
 	}
-	return exec.RunInherit("mysql", argsCli...)
+	defer conn.Close()
+	return runMySQLREPL(conn)
 }
 
 func runMysqlLogin(cmd *cobra.Command, args []string) error {
 	cfg := getMySQLConfig()
-	argsCli := []string{"-h", cfg.Host, "-P", cfg.Port, "-u", args[0], "-p" + args[1]}
-	return exec.RunInherit("mysql", argsCli...)
+	if len(args) >= 1 {
+		cfg.User = args[0]
+	}
+	if len(args) >= 2 {
+		cfg.Password = args[1]
+	}
+	if cfg.User == "" {
+		return fmt.Errorf("username required: pass [username] [password] or use --user and --password (or set MYSQL_ROOT_PASSWORD)")
+	}
+	conn, err := openMySQL(cfg)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return runMySQLREPL(conn)
 }

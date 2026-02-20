@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/sichang824/awesome-shell/internal/config"
 	"github.com/sichang824/awesome-shell/internal/db"
-	"github.com/sichang824/awesome-shell/internal/exec"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -133,13 +136,13 @@ var (
 	}
 	mongoClientCmd = &cobra.Command{
 		Use:   "client",
-		Short: "Connect to MongoDB (interactive, runs local mongosh)",
+		Short: "Connect to MongoDB (interactive, Go driver REPL)",
 		RunE:  runMongoClient,
 	}
 	mongoLoginCmd = &cobra.Command{
 		Use:   "login [username] [password]",
-		Short: "Connect to MongoDB as user",
-		Args:  cobra.ExactArgs(2),
+		Short: "Connect to MongoDB as user (args or --user/--password/env)",
+		Args:  cobra.RangeArgs(0, 2),
 		RunE:  runMongoLogin,
 	}
 )
@@ -392,17 +395,140 @@ func runMongoCollections(cmd *cobra.Command, args []string) error {
 	return cursor.Err()
 }
 
-func runMongoClient(cmd *cobra.Command, args []string) error {
-	cfg := getMongoConfig()
-	argsCli := []string{"--host", cfg.Host, "--port", cfg.Port, "--username", cfg.User}
-	if cfg.Password != "" {
-		argsCli = append(argsCli, "--password", cfg.Password)
+func runMongoREPL(ctx context.Context, client *mongo.Client) error {
+	scanner := bufio.NewScanner(os.Stdin)
+	var currentDB string
+	fmt.Fprintln(os.Stderr, "Go driver REPL (use <db>, show dbs, show collections, find <coll> [limit], \\q to quit)")
+	for {
+		if currentDB != "" {
+			fmt.Fprintf(os.Stderr, "mongo:%s> ", currentDB)
+		} else {
+			fmt.Fprint(os.Stderr, "mongo> ")
+		}
+		if !scanner.Scan() {
+			break
+		}
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		if line == "\\q" || strings.EqualFold(line, "quit") || strings.EqualFold(line, "exit") {
+			break
+		}
+		parts := strings.Fields(line)
+		cmd := strings.ToLower(parts[0])
+		switch cmd {
+		case "use":
+			if len(parts) < 2 {
+				fmt.Fprintln(os.Stderr, "usage: use <database>")
+				continue
+			}
+			currentDB = parts[1]
+			fmt.Fprintln(os.Stderr, "switched to db", currentDB)
+		case "show":
+			if len(parts) < 2 {
+				fmt.Fprintln(os.Stderr, "usage: show dbs | show collections")
+				continue
+			}
+			switch strings.ToLower(parts[1]) {
+			case "dbs":
+				list, err := client.ListDatabases(ctx, bson.M{})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR:", err)
+					continue
+				}
+				for _, d := range list.Databases {
+					fmt.Println(d.Name)
+				}
+			case "collections":
+				if currentDB == "" {
+					fmt.Fprintln(os.Stderr, "ERROR: no database selected (use <db> first)")
+					continue
+				}
+				cursor, err := client.Database(currentDB).ListCollections(ctx, bson.M{})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR:", err)
+					continue
+				}
+				for cursor.Next(ctx) {
+					var doc struct {
+						Name string `bson:"name"`
+					}
+					if err := cursor.Decode(&doc); err != nil {
+						fmt.Fprintln(os.Stderr, "ERROR:", err)
+						break
+					}
+					fmt.Println(doc.Name)
+				}
+				cursor.Close(ctx)
+			default:
+				fmt.Fprintln(os.Stderr, "usage: show dbs | show collections")
+			}
+		case "find":
+			if len(parts) < 2 {
+				fmt.Fprintln(os.Stderr, "usage: find <collection> [limit]")
+				continue
+			}
+			if currentDB == "" {
+				fmt.Fprintln(os.Stderr, "ERROR: no database selected (use <db> first)")
+				continue
+			}
+			collName := parts[1]
+			limit := 20
+			if len(parts) >= 3 {
+				if n, err := strconv.Atoi(parts[2]); err == nil && n > 0 {
+					limit = n
+				}
+			}
+			cursor, err := client.Database(currentDB).Collection(collName).Find(ctx, bson.M{}, options.Find().SetLimit(int64(limit)))
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR:", err)
+				continue
+			}
+			for cursor.Next(ctx) {
+				var doc bson.M
+				if err := cursor.Decode(&doc); err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR:", err)
+					break
+				}
+				raw, _ := json.Marshal(doc)
+				fmt.Println(string(raw))
+			}
+			cursor.Close(ctx)
+		default:
+			fmt.Fprintln(os.Stderr, "unknown command. use: use <db>, show dbs, show collections, find <coll> [limit], \\q")
+		}
 	}
-	return exec.RunInherit("mongosh", argsCli...)
+	return scanner.Err()
+}
+
+func runMongoClient(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+	return runMongoREPL(ctx, client)
 }
 
 func runMongoLogin(cmd *cobra.Command, args []string) error {
 	cfg := getMongoConfig()
-	argsCli := []string{"--host", cfg.Host, "--port", cfg.Port, "--username", args[0], "--password", args[1], "--authenticationDatabase", "admin"}
-	return exec.RunInherit("mongosh", argsCli...)
+	if len(args) >= 1 {
+		cfg.User = args[0]
+	}
+	if len(args) >= 2 {
+		cfg.Password = args[1]
+	}
+	if cfg.User == "" {
+		return fmt.Errorf("username required: pass [username] [password] or use --user and --password (or set MONGO_INITDB_ROOT_USERNAME / MONGO_INITDB_ROOT_PASSWORD)")
+	}
+	ctx := context.Background()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+	return runMongoREPL(ctx, client)
 }
