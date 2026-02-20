@@ -31,8 +31,11 @@ func init() {
 }
 
 func getMongoConfig() db.MongoConfig {
+	// Read from env first so direnv/shell exports (and special chars like + in password) are not overwritten
 	host := os.Getenv("MONGO_HOST")
 	port := os.Getenv("MONGO_PORT")
+	user := os.Getenv("MONGO_INITDB_ROOT_USERNAME")
+	pw := os.Getenv("MONGO_INITDB_ROOT_PASSWORD")
 	config.LoadEnv()
 	if host == "" {
 		host = config.GetEnv("MONGO_HOST", mongoHost)
@@ -46,13 +49,17 @@ func getMongoConfig() db.MongoConfig {
 	if port == "" {
 		port = "27017"
 	}
-	pw := mongoPassword
-	if pw == "" {
-		pw = config.GetEnv("MONGO_INITDB_ROOT_PASSWORD", "")
+	if user == "" {
+		user = mongoUser
 	}
-	user := mongoUser
 	if user == "" {
 		user = config.GetEnv("MONGO_INITDB_ROOT_USERNAME", "root")
+	}
+	if pw == "" {
+		pw = mongoPassword
+	}
+	if pw == "" {
+		pw = config.GetEnv("MONGO_INITDB_ROOT_PASSWORD", "")
 	}
 	return db.MongoConfig{
 		Host:     host,
@@ -105,6 +112,24 @@ var (
 		Short: "Grant role on database to user",
 		Args:  cobra.ExactArgs(3),
 		RunE:  runMongoGrant,
+	}
+	mongoDbsCmd = &cobra.Command{
+		Use:   "dbs",
+		Short: "List databases",
+		Args:  cobra.NoArgs,
+		RunE:  runMongoDbs,
+	}
+	mongoUsersCmd = &cobra.Command{
+		Use:   "users",
+		Short: "List users",
+		Args:  cobra.NoArgs,
+		RunE:  runMongoUsers,
+	}
+	mongoCollectionsCmd = &cobra.Command{
+		Use:   "collections [database]",
+		Short: "List collections in a database",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runMongoCollections,
 	}
 	mongoClientCmd = &cobra.Command{
 		Use:   "client",
@@ -295,6 +320,76 @@ func runMongoGrant(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println("Granted.")
 	return nil
+}
+
+func runMongoDbs(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+	list, err := client.ListDatabases(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	for _, d := range list.Databases {
+		fmt.Println(d.Name)
+	}
+	return nil
+}
+
+func runMongoUsers(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+	admin := client.Database("admin")
+	var result struct {
+		Users []struct {
+			User string `bson:"user"`
+		} `bson:"users"`
+	}
+	if err := admin.RunCommand(ctx, bson.D{{Key: "usersInfo", Value: 1}}).Decode(&result); err != nil {
+		return err
+	}
+	for _, u := range result.Users {
+		fmt.Println(u.User)
+	}
+	return nil
+}
+
+func runMongoCollections(cmd *cobra.Command, args []string) error {
+	if err := requireSafeIdent(args[0], "database"); err != nil {
+		return err
+	}
+	database := args[0]
+	ctx := context.Background()
+	cfg := getMongoConfig()
+	client, err := openMongo(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+	cursor, err := client.Database(database).ListCollections(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var doc struct {
+			Name string `bson:"name"`
+		}
+		if err := cursor.Decode(&doc); err != nil {
+			return err
+		}
+		fmt.Println(doc.Name)
+	}
+	return cursor.Err()
 }
 
 func runMongoClient(cmd *cobra.Command, args []string) error {

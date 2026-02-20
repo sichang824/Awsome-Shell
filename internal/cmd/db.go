@@ -80,11 +80,13 @@ func init() {
 	)
 	pgsqlCmd.AddCommand(
 		pgsqlCreateDBCmd, pgsqlCreateUserCmd, pgsqlDeleteDBCmd, pgsqlDeleteUserCmd,
-		pgsqlGrantCmd, pgsqlClientCmd, pgsqlLoginCmd,
+		pgsqlGrantCmd, pgsqlDbsCmd, pgsqlUsersCmd, pgsqlTablesCmd,
+		pgsqlClientCmd, pgsqlLoginCmd,
 	)
 	mongoCmd.AddCommand(
 		mongoCreateDBCmd, mongoCreateUserCmd, mongoDeleteDBCmd, mongoDeleteUserCmd,
-		mongoGrantCmd, mongoClientCmd, mongoLoginCmd,
+		mongoGrantCmd, mongoDbsCmd, mongoUsersCmd, mongoCollectionsCmd,
+		mongoClientCmd, mongoLoginCmd,
 	)
 }
 

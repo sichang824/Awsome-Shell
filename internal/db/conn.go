@@ -42,8 +42,9 @@ type MongoConfig struct {
 }
 
 // URI returns MongoDB connection URI for mongo-driver.
+// authSource=admin is required for root user (MONGO_INITDB_ROOT_*).
 func (c *MongoConfig) URI() string {
-	u := &url.URL{Scheme: "mongodb", Host: c.Host + ":" + c.Port, Path: "/"}
+	u := &url.URL{Scheme: "mongodb", Host: c.Host + ":" + c.Port, Path: "/", RawQuery: "authSource=admin"}
 	if c.User != "" || c.Password != "" {
 		u.User = url.UserPassword(c.User, c.Password)
 	}

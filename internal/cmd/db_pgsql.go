@@ -93,6 +93,24 @@ var (
 		Args:  cobra.ExactArgs(2),
 		RunE:  runPgsqlGrant,
 	}
+	pgsqlDbsCmd = &cobra.Command{
+		Use:   "dbs",
+		Short: "List databases",
+		Args:  cobra.NoArgs,
+		RunE:  runPgsqlDbs,
+	}
+	pgsqlUsersCmd = &cobra.Command{
+		Use:   "users",
+		Short: "List users",
+		Args:  cobra.NoArgs,
+		RunE:  runPgsqlUsers,
+	}
+	pgsqlTablesCmd = &cobra.Command{
+		Use:   "tables [database]",
+		Short: "List tables in a database",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runPgsqlTables,
+	}
 	pgsqlClientCmd = &cobra.Command{
 		Use:   "client",
 		Short: "Connect to PostgreSQL (interactive, runs local psql)",
@@ -278,6 +296,77 @@ func runPgsqlGrant(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println("Granted.")
 	return nil
+}
+
+func runPgsqlDbs(cmd *cobra.Command, args []string) error {
+	cfg := getPgConfig()
+	conn, err := openPg(cfg)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	rows, err := conn.Query("SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		fmt.Println(name)
+	}
+	return rows.Err()
+}
+
+func runPgsqlUsers(cmd *cobra.Command, args []string) error {
+	cfg := getPgConfig()
+	conn, err := openPg(cfg)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	rows, err := conn.Query("SELECT usename FROM pg_user ORDER BY usename")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		fmt.Println(name)
+	}
+	return rows.Err()
+}
+
+func runPgsqlTables(cmd *cobra.Command, args []string) error {
+	if err := requireSafeIdent(args[0], "database"); err != nil {
+		return err
+	}
+	database := args[0]
+	cfg := getPgConfig()
+	cfg.Database = database
+	conn, err := openPg(cfg)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	rows, err := conn.Query("SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		fmt.Println(name)
+	}
+	return rows.Err()
 }
 
 func runPgsqlClient(cmd *cobra.Command, args []string) error {
