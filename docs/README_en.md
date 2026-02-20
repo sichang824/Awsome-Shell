@@ -1,7 +1,7 @@
 
-# Awesome-Shell
+# Awesome Shell
 
-Awesome-Shell is a powerful collection of shell script tools designed to simplify daily development and operations tasks. With Awesome-Shell, you can easily perform various common tasks such as database management, system monitoring, and automated deployment.
+Awesome Shell is a powerful collection of shell script tools designed to simplify daily development and operations tasks. With Awesome Shell, you can easily perform various common tasks such as database management, system monitoring, and automated deployment.
 
 ## Install
 
@@ -144,15 +144,15 @@ We welcome contributions from the community! Please read our [contributing guide
 
 ## FAQ
 
-### How do I install Awesome-Shell?
+### How do I install Awesome Shell?
 
 Follow the installation steps mentioned above. If you encounter any issues, please check the log files for more details.
 
-### How do I uninstall Awesome-Shell?
+### How do I uninstall Awesome Shell?
 
 Run the uninstall script as mentioned in the "Uninstall" section.
 
-### How do I contribute to Awesome-Shell?
+### How do I contribute to Awesome Shell?
 
 Please read our [contributing guidelines](CONTRIBUTING.md) for detailed instructions on how to contribute.
 

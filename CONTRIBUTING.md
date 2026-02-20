@@ -1,5 +1,5 @@
 
-# Contributing to Awesome-Shell
+# Contributing to Awesome Shell
 
 我们非常欢迎社区贡献者的参与！无论是修复bug、添加功能、改进文档，还是提供反馈和建议，都对项目的发展至关重要。
 
@@ -69,4 +69,4 @@
 
 感谢你的贡献！
 
-Awesome-Shell 团队
+Awesome Shell 团队

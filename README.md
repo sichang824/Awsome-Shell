@@ -1,6 +1,6 @@
-# Awesome-Shell
+# Awesome Shell
 
-Awesome-Shell是一个功能强大的Shell脚本工具集合，旨在简化日常开发和运维工作。通过使用Awesome-Shell，您可以轻松执行各种常见任务，例如数据库管理、系统监控和自动化部署等。
+Awesome Shell 是一个功能强大的 Shell 脚本工具集合，旨在简化日常开发和运维工作。通过使用 Awesome Shell，您可以轻松执行各种常见任务，例如数据库管理、系统监控和自动化部署等。
 
 ## AI 助手
 
@@ -9,6 +9,26 @@ Awsome Shell现在接入了 Coze AI Bot，你可以通过 AI 助手快速的解�
 [Awsome Shell - Coze AI Bot](https://www.coze.com/s/Zs8MoWf1c/)
 
 ## 安装
+
+### Go 单一二进制（推荐）
+
+项目已使用 Go 重构，可直接编译为单一可执行文件，无需依赖 Shell 环境。
+
+```sh
+# 克隆后编译
+git clone https://github.com/sichang824/Awsome-Shell.git ~/.Awesome-Shell
+cd ~/.Awesome-Shell
+make build
+# 或: go build -o bin/as ./cmd/awesome-shell
+
+# 使用
+./bin/as --help
+./bin/as db mysql create-db mydb
+./bin/as password
+./bin/as ip ipv4
+```
+
+将 `bin/as` 加入 PATH 或复制到 `/usr/local/bin` 即可全局使用。
 
 ### coding
 
@@ -166,15 +186,15 @@ Commands:
 
 ## 常见问题
 
-### 如何安装Awesome-Shell？
+### 如何安装 Awesome Shell？
 
 请按照上面提到的安装步骤进行操作。如果遇到任何问题，请检查日志文件以获取更多详细信息。
 
-### 如何卸载Awesome-Shell？
+### 如何卸载 Awesome Shell？
 
 按照“卸载”部分提到的步骤运行卸载脚本。
 
-### 如何为Awesome-Shell做贡献？
+### 如何为 Awesome Shell 做贡献？
 
 请阅读我们的[贡献指南](CONTRIBUTING.md)以获取详细的贡献说明。
 
