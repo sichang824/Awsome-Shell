@@ -48,12 +48,12 @@ func confirm(prompt, expected string) bool {
 	return strings.TrimSpace(scanner.Text()) == expected
 }
 
-// safeIdent allows only alphanumeric and underscore for SQL identifiers to avoid injection.
-var safeIdent = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+// safeIdent allows alphanumeric, underscore, and hyphen for SQL identifiers (e.g. expert-dev); avoids injection when quoted.
+var safeIdent = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func requireSafeIdent(name, kind string) error {
 	if !safeIdent.MatchString(name) {
-		return fmt.Errorf("invalid %s name (only letters, numbers, underscore allowed)", kind)
+		return fmt.Errorf("invalid %s name (only letters, numbers, underscore, hyphen allowed)", kind)
 	}
 	return nil
 }
